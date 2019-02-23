@@ -14,7 +14,7 @@ import Utils from './common/utils'
 const scene = new Scene();
 const camera = new PerspectiveCamera();
 const renderer = new WebGLRenderer({antialias: true});
-const seedScene = new SeedScene();
+const seedScene = new SeedScene(camera);
 
 // scene
 scene.add(seedScene);

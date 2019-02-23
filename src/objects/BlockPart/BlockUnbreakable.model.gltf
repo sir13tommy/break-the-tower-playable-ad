@@ -6,7 +6,7 @@
   "scenes": [
     {
       "nodes": [
-        1
+        2
       ],
       "name": "Scene"
     }
@@ -36,9 +36,15 @@
         0,
         1
       ],
-      "name": "model (1).obj",
+      "name": "model_(1)obj",
       "children": [
         0
+      ]
+    },
+    {
+      "name": "BlockPart.model.gltf",
+      "children": [
+        1
       ]
     }
   ],
@@ -124,8 +130,7 @@
       "pbrMetallicRoughness": {
         "metallicFactor": 0.5,
         "roughnessFactor": 0.5
-      },
-      "name": "lambert1"
+      }
     }
   ],
   "meshes": [
