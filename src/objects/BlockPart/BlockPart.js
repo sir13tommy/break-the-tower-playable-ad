@@ -1,8 +1,10 @@
-import { Group, Cache, Box3, Color } from 'three';
+import { Group, Cache, Box3 } from 'three';
+import { Box, Body, Vec3 } from 'cannon'
 
 export default class BlockPart extends Group {
-  constructor(type) {
+  constructor(world, type) {
     super();
+    this.world = world
 
     if (type === undefined) {
       type = 0
@@ -13,9 +15,6 @@ export default class BlockPart extends Group {
 
     this.name = 'Block part';
     this.matrixAutoUpdate = true
-
-    this.diePart = Cache.get('block_die').scene.clone(true)
-    this.diePart.name = 'die'
 
     let bodyKey
     switch (type) {
@@ -28,37 +27,43 @@ export default class BlockPart extends Group {
       default:
         break
     }
-    this.bodyPart = Cache.get(bodyKey).scene.clone(true)
-    this.bodyPart.name = 'body'
-    this._bodyMesh = this.bodyPart.children[0].children[0].children[0]
+    let model = Cache.get(bodyKey).scene.clone(true)
 
+    this._bodyMesh = model.children[0].children[0].children[0]
+
+    // add edges geometry
     var geo = new THREE.EdgesGeometry( this._bodyMesh.geometry, 45);
     var mat = new THREE.LineBasicMaterial( { color: 0x000000, linewidth: 1 } );
     var wireframe = new THREE.LineSegments( geo, mat );
     wireframe.renderOrder = 1; // make sure wireframes are rendered 2nd
     this._bodyMesh.add( wireframe );
 
-    this.add(this.bodyPart, this.diePart)
+    this.add(model)
   }
 
-  getSize (object) {
-    if (!object) {
-      object = this
-    }
-
-    let box3 = new Box3().setFromObject(object)
+  getSize () {
+    let box3 = new Box3().setFromObject(this)
     return box3.getSize()
   }
 
-  getBodySize() {
-    return this.getSize(this.bodyPart)
+  initPhysicsBody () {
+    let size = this.getSize()
+    let shape = new Box(new Vec3(size.x, size.y, size.z))
+    this.body = new Body({
+      mass: 0,
+      type: Body.KINEMATIC
+    })
+    this.body.addShape(shape)
+    this.body.name = 'Block part'
+    this.body.object = this
+
+    this.world.addBody(this.body)
   }
 
-  getDieSize() {
-    return this.getSize(this.diePart)
-  }
-
-  removeDiePart () {
-    this.remove(this.diePart)
+  update () {
+    if (this.body) {
+      this.position.copy(this.body.position)
+      this.quaternion.copy(this.body.quaternion)  
+    }
   }
 }
