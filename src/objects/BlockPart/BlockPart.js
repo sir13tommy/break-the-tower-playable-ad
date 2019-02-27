@@ -1,5 +1,6 @@
 import { Group, Cache, Box3 } from 'three';
 import { Box, Body, Vec3 } from 'cannon'
+import * as TWEEN from '@tweenjs/tween.js'
 
 export default class BlockPart extends Group {
   constructor(world, type) {
@@ -73,6 +74,16 @@ export default class BlockPart extends Group {
     if (this.body) {
       this.position.copy(this.body.position)
       this.quaternion.copy(this.body.quaternion)  
+    }
+  }
+
+  shake () {
+    if (this.bodyType === 'block_unbreak') {
+      this.tween = new TWEEN.Tween(this.scale)
+        .to({ x: [this.scale.x + 0.2, this.scale.x], y: [this.scale.y - 0.2, this.scale.y]}, 1000)
+        .easing(TWEEN.Easing.Elastic.Out)
+        .start();
+
     }
   }
 }

@@ -14,6 +14,7 @@ export default class MainBall extends Group {
     let scaleFactor = 0.5
     this.scale.set(scaleFactor, scaleFactor, scaleFactor)
 
+    this.userData.alive = true
     this.objectsToRemove = []
 
     this.initPhysicsBody()
@@ -41,8 +42,7 @@ export default class MainBall extends Group {
     this.body.angularDamping = 1
 
     this.body.addEventListener('collide', (event) => {
-      this.body.velocity.set(0, 50, 0)
-      this.body.angularVelocity.set(0, 0, 0)
+      this.needToJump = true
 
       // remove block
       if (event.body.object.isDie) {
@@ -52,7 +52,15 @@ export default class MainBall extends Group {
       if (event.body.object.bodyType === 'block_part') {
         this.objectsToRemove.push(event.body.object)
       }
+
+      if (event.body.object.bodyType === 'block_unbreak') {
+        event.body.object.shake()
+      }
     })
+  }
+
+  jump() {
+    this.body.velocity.set(0, 50, 0)
   }
 
   kill (object) {
@@ -78,6 +86,11 @@ export default class MainBall extends Group {
     if (this.body) {
       this.body.velocity.x = 0
       this.body.velocity.z = 0
+
+      if (this.needToJump) {
+        this.jump()
+        this.needToJump = false
+      }
   
       this.position.copy(this.body.position);
       this.quaternion.copy(this.body.quaternion);

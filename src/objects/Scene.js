@@ -2,6 +2,7 @@ import 'three/examples/js/loaders/GLTFLoader'
 import 'cannon/tools/threejs/CannonDebugRenderer'
 
 import { Group, GLTFLoader, Cache, Box3, CannonDebugRenderer } from 'three';
+import * as TWEEN from '@tweenjs/tween.js'
 import BlockPart from './BlockPart/BlockPart.js'
 import DieBlock from './DieBlock/DieBlock.js'
 import MainBall from './MainBall/MainBall'
@@ -45,6 +46,9 @@ export default class SeedScene extends Group {
     this.addInputControls()
 
     utils.fitCameraToObject(this.camera, this.tower)
+
+    window.camera = this.camera
+    window.tower = this.tower
   }
 
   load () {
@@ -109,7 +113,10 @@ export default class SeedScene extends Group {
         this.objects.push(blockPart)
         row.blockParts.push(blockPart)
       }
+      let rowSizeY = this.getTowerSize().y - offsetY
       offsetY = this.getTowerSize().y
+
+      row.rowSizeY = rowSizeY
       this.rows.push(row)
     }
 
@@ -162,13 +169,20 @@ export default class SeedScene extends Group {
 
     this.objectsToRemove.push(rowToRemove.dieBlock, ...rowToRemove.blockParts)
 
+    // move tower up
+    this.tower.children.forEach(child => {
+      let tween = new TWEEN.Tween(child.body.position)
+        .to({y: child.body.position.y + rowToRemove.rowSizeY}, 1000)
+        .start()
+    })
+
     if (this.rows.length === 0) {
       this.finishGame()
     }
   }
 
   finishGame () {
-    this.mainBall.kill(this.mainBall)
+    this.objectsToRemove.push(this.mainBall)
   }
 
   addInputControls() {

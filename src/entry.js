@@ -1,5 +1,6 @@
 import { WebGLRenderer, PerspectiveCamera, Scene, Vector3 } from 'three';
 import * as CANNON from 'cannon'
+import * as TWEEN from '@tweenjs/tween.js'
 
 import SeedScene from './objects/Scene.js';
 
@@ -32,7 +33,7 @@ function initCannon() {
   world = new CANNON.World();
   world.gravity.set(0, -120, 0);
   world.broadphase = new CANNON.NaiveBroadphase();
-  world.solver.iterations = 10;
+  world.solver.iterations = 1;
 
   world.defaultContactMaterial.contactEquationStiffness = 1e8;
   world.defaultContactMaterial.contactEquationRelaxation = 10;
@@ -65,10 +66,15 @@ function updatePhysics() {
   world.step(timeStep);
 }
 
+function updateTween(timeStamp) {
+  TWEEN.update(timeStamp)
+}
+
 function animate () {
   const onAnimationFrameHandler = (timeStamp) => {
     renderer.render(scene, camera);
     updatePhysics()
+    updateTween(timeStamp)
     seedScene.update && seedScene.update(timeStamp);
     window.requestAnimationFrame(onAnimationFrameHandler);
   }
