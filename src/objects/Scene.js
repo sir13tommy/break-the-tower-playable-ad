@@ -1,7 +1,9 @@
 import 'three/examples/js/loaders/GLTFLoader'
-import { Group, GLTFLoader, Cache, Box3 } from 'three';
-import { Box, Body, Vec3 } from 'cannon'
+import 'cannon/tools/threejs/CannonDebugRenderer'
+
+import { Group, GLTFLoader, Cache, Box3, CannonDebugRenderer } from 'three';
 import BlockPart from './BlockPart/BlockPart.js'
+import DieBlock from './DieBlock/DieBlock.js'
 import MainBall from './MainBall/MainBall'
 import BasicLights from './Lights.js';
 import utils from '../common/utils';
@@ -23,6 +25,8 @@ export default class SeedScene extends Group {
 
     this.loader = new GLTFLoader()
 
+    this.debugRenderer = new CannonDebugRenderer(this, world)
+
     this.lights = new BasicLights();
     this.add(this.lights);
 
@@ -30,6 +34,7 @@ export default class SeedScene extends Group {
     this.add(this.tower)
 
     this.objects = []
+    this.objectsToRemove = []
 
     this.load()
   }
@@ -45,9 +50,9 @@ export default class SeedScene extends Group {
   load () {
     this.fileList = [
       { key: 'block_part', url: require('./BlockPart/BlockPart.model.gltf'), loaded: false},
-      { key: 'block_die', url: require('./BlockPart/BlockDie.model.gltf'), loaded: false},
       { key: 'block_unbreak', url: require('./BlockPart/BlockUnbreakable.model.gltf'), loaded: false},
-      { key: 'main_ball', url: require('./MainBall/MainBall.model.gltf'), loaded: false}
+      { key: 'main_ball', url: require('./MainBall/MainBall.model.gltf'), loaded: false},
+      { key: 'die_block', url: require('./DieBlock/DieBlock.model.gltf'), loaded: false}
     ]
 
     this.fileList.forEach(file => {
@@ -74,26 +79,44 @@ export default class SeedScene extends Group {
   }
 
   initTower () {
+    let offsetY = 0
+    this.rows = []
     for (let y = towerScheme.length - 1; y >= 0; y--) {
+      let row = {}
+
+      let dieBlock = new DieBlock(this.world)
+      dieBlock.body.position.y = offsetY
+      dieBlock.userData.angleY = dieBlock.rotation.y
+      dieBlock.update()
+      this.tower.add(dieBlock)
+      this.objects.push(dieBlock)
+      offsetY = this.getTowerSize().y
+
+      row.dieBlock = dieBlock
+      row.blockParts = []
+
       for (let x = 0; x < towerScheme[y].length; x++) {
         let blockType = towerScheme[y][x]
         let blockPart = new BlockPart(this.world, blockType)
-        blockPart.rotation.y = (2 * Math.PI / 10) * x
-        blockPart.position.y = blockPart.getSize().y * (towerScheme.length - y)
+        let blockAngle = (2 * Math.PI / 10) * x
+        blockPart.userData.angleY = blockAngle
+
+        blockPart.body.quaternion.setFromEuler(0, blockAngle, 0, 'XYZ')
+        blockPart.body.position.y = offsetY + blockPart.getSize().y / 2
+        blockPart.update()
 
         this.tower.add(blockPart)
         this.objects.push(blockPart)
+        row.blockParts.push(blockPart)
       }
+      offsetY = this.getTowerSize().y
+      this.rows.push(row)
     }
 
-    this.initTowerPhysicsBody()
 
-    var helper = new THREE.BoundingBoxHelper(this.tower, 0x00ff00);
-    helper.update();
-    // If you want a visible bounding box
-    this.add(helper);
-
-    this.tower.body.position.y -= this.getTowerSize().y * 1.8
+    this.tower.children.forEach(child => {
+      child.body.position.y -= this.getTowerSize().y * 1.6
+    })
 
     this.update()
   }
@@ -103,33 +126,49 @@ export default class SeedScene extends Group {
     return towerBox.getSize()
   }
 
-  initTowerPhysicsBody () {
-    let size = this.getTowerSize()
-    let shape = new Box(new Vec3(size.x, size.y, size.z));
-    this.tower.body = new Body({
-      mass: 1,
-      type: Body.KINEMATIC
-    });
-    this.tower.body.addShape(shape);
-    this.world.addBody(this.tower.body);
-  }
-
   addMainBall () {
     const offsetBallTower = 7
     this.mainBall = new MainBall(this.world)
     this.add(this.mainBall)
 
-    console.log(this.mainBall.getSize())
-
-    this.ballHelper = new THREE.BoundingBoxHelper(this.mainBall, 0xff0000);
-    // If you want a visible bounding box
-    this.add(this.ballHelper);
-
     let towerSize = this.getTowerSize()
     this.mainBall.body.position.y = this.tower.position.y + towerSize.y + offsetBallTower
     this.mainBall.body.position.z = this.tower.position.z + towerSize.z / 2 - this.mainBall.getSize().z / 2
 
+    this.mainBall.body.addEventListener('kill', () => {
+      this.checkRows()
+    })
+
     this.objects.push(this.mainBall)
+  }
+
+  checkRows () {
+    let topRow = this.rows[this.rows.length - 1]
+
+    let hasAlive = false
+    topRow.blockParts.forEach(blockPart => {
+      if (blockPart.bodyType === 'block_part' && blockPart.userData.alive) {
+        hasAlive = true
+      }
+    })
+
+    if (!hasAlive) {
+      this.removeTopRow()
+    }
+  }
+
+  removeTopRow() {
+    let rowToRemove = this.rows.pop()
+
+    this.objectsToRemove.push(rowToRemove.dieBlock, ...rowToRemove.blockParts)
+
+    if (this.rows.length === 0) {
+      this.finishGame()
+    }
+  }
+
+  finishGame () {
+    this.mainBall.kill(this.mainBall)
   }
 
   addInputControls() {
@@ -155,7 +194,12 @@ export default class SeedScene extends Group {
         let targetRotationX = ( mouseX - this.inputData.lastMouseX) * 0.00025;
 
         // update tower rotation to use Cannon physics
-        this.tower.rotation.y += (targetRotationX * this.inputData.speedRotationFactor)
+        let angleStep = targetRotationX * this.inputData.speedRotationFactor
+        this.tower.children.forEach(child => {
+          let targetAngle = child.userData.angleY + angleStep
+          child.body.quaternion.setFromEuler(0, targetAngle, 0, 'XYZ')
+          child.userData.angleY = targetAngle
+        })
         this.inputData.lastMouseX = event.clientX
     }
 
@@ -181,13 +225,21 @@ export default class SeedScene extends Group {
       }
     })
 
-    if (this.ballHelper) {
-      this.ballHelper.update();
-    }
+    this.objectsToRemove.forEach(object => {
+      if (object.userData.alive) {
+        object.userData.alive = false
+        if (object.parent) {
+          object.parent.remove(object)
+        }
+        if (object.body && object.body.world) {
+          object.body.world.remove(object.body)
+        }
+      }
+    })
+    this.objectsToRemove = []
 
-    if (this.tower && this.tower.body) {
-      this.tower.position.copy(this.tower.body.position);
-      this.tower.quaternion.copy(this.tower.body.quaternion);
+    if (this.debugRenderer) {
+      this.debugRenderer.update()
     }
   }
 }

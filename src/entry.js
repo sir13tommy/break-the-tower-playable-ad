@@ -30,7 +30,7 @@ resize()
 
 function initCannon() {
   world = new CANNON.World();
-  world.gravity.set(0, -40, 0);
+  world.gravity.set(0, -120, 0);
   world.broadphase = new CANNON.NaiveBroadphase();
   world.solver.iterations = 10;
 

@@ -11,6 +11,11 @@ export default class MainBall extends Group {
     let model = Cache.get('main_ball').scene.clone(true)
     this.add(model)
 
+    let scaleFactor = 0.5
+    this.scale.set(scaleFactor, scaleFactor, scaleFactor)
+
+    this.objectsToRemove = []
+
     this.initPhysicsBody()
   }
 
@@ -21,22 +26,61 @@ export default class MainBall extends Group {
 
   initPhysicsBody () {
     let size = this.getSize()
-    let shape = new Sphere(size.x);
+    let radius = size.x / 2
+    let shape = new Sphere(radius);
     let material = new Material()
     this.body = new Body({
       mass: 1,
       linearFactor: new Vec3(0, 1, 0),
       material
     });
-    this.body.addShape(shape);
+    let shapeOffset = new Vec3(0, radius, 0)
+    this.body.addShape(shape, shapeOffset);
     this.world.addBody(this.body);
 
+    this.body.angularDamping = 1
+
     this.body.addEventListener('collide', (event) => {
-      this.body.velocity.y = 20
+      this.body.velocity.set(0, 50, 0)
+      this.body.angularVelocity.set(0, 0, 0)
+
+      // remove block
+      if (event.body.object.isDie) {
+        this.objectsToRemove.push(this)
+      }
+
+      if (event.body.object.bodyType === 'block_part') {
+        this.objectsToRemove.push(event.body.object)
+      }
     })
   }
+
+  kill (object) {
+    this.objectsToRemove.push(object)
+  }
+
   update () {
-    this.position.copy(this.body.position);
-    this.quaternion.copy(this.body.quaternion);
+    this.objectsToRemove.forEach(object => {
+      object.userData.alive = false
+      if (object.parent) {
+        object.parent.remove(object)
+      }
+      if (object.body.world) {
+        object.body.world.remove(object.body)
+      }
+
+      this.body.dispatchEvent({
+        type: 'kill'
+      })
+    })
+    this.objectsToRemove = []
+
+    if (this.body) {
+      this.body.velocity.x = 0
+      this.body.velocity.z = 0
+  
+      this.position.copy(this.body.position);
+      this.quaternion.copy(this.body.quaternion);
+    }
   }
 }

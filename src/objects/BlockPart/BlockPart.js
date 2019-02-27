@@ -29,7 +29,11 @@ export default class BlockPart extends Group {
     }
     let model = Cache.get(bodyKey).scene.clone(true)
 
+    this.bodyType = bodyKey
+    this.userData.alive = true
+
     this._bodyMesh = model.children[0].children[0].children[0]
+    
 
     // add edges geometry
     var geo = new THREE.EdgesGeometry( this._bodyMesh.geometry, 45);
@@ -39,21 +43,26 @@ export default class BlockPart extends Group {
     this._bodyMesh.add( wireframe );
 
     this.add(model)
+
+    this.box = new Box3().setFromObject(this)
+
+    this.initPhysicsBody()
   }
 
   getSize () {
-    let box3 = new Box3().setFromObject(this)
-    return box3.getSize()
+    return this.box.getSize()
   }
 
   initPhysicsBody () {
     let size = this.getSize()
-    let shape = new Box(new Vec3(size.x, size.y, size.z))
+    let boxCenter = this.box.getCenter()
+    let shape = new Box(new Vec3(size.x / 2, size.y / 2, size.z / 2))
     this.body = new Body({
       mass: 0,
-      type: Body.KINEMATIC
+      type: Body.STATIC
     })
-    this.body.addShape(shape)
+    let shapeOffset = new Vec3().copy(boxCenter)
+    this.body.addShape(shape, shapeOffset)
     this.body.name = 'Block part'
     this.body.object = this
 
