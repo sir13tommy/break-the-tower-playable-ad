@@ -47,8 +47,9 @@ export default class SeedScene extends Group {
 
     utils.fitCameraToObject(this.camera, this.tower)
 
-    window.camera = this.camera
-    window.tower = this.tower
+    this.camera.position.x = 0
+    this.camera.position.y = this.getTowerSize().y
+    this.camera.lookAt(this.tower.position)
   }
 
   load () {
@@ -122,8 +123,10 @@ export default class SeedScene extends Group {
 
 
     this.tower.children.forEach(child => {
-      child.body.position.y -= this.getTowerSize().y * 1.6
+      child.body.position.y -= this.getTowerSize().y * 0.8
     })
+
+    
 
     this.update()
   }
