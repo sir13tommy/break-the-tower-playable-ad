@@ -1,6 +1,7 @@
 const path = require('path');
 const pkg = require('./package.json');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const HtmlWebpackInlineSourcePlugin = require('html-webpack-inline-source-plugin')
 const buildPath = './build/';
 
 module.exports = {
@@ -36,13 +37,19 @@ module.exports = {
         use: 'base64-inline-loader?name=[name].[ext]',
         exclude: path.resolve(__dirname, './node_modules/')
       },{
-        test: /\.(vert|frag|glsl|shader|txt)$/i,
+        test: /\.(vert|frag|glsl|shader|txt|html)$/i,
         use: 'raw-loader',
         exclude: path.resolve(__dirname, './node_modules/')
-      }
+      },
+      { test: /\.css$/, use: ['style-loader', 'css-loader'] },
     ]
   },
   plugins: [
-    new HtmlWebpackPlugin({'title': 'three-seed project'})
+    new HtmlWebpackPlugin({
+      inlineSource: '.(js)$',
+      'template': './src/index.html',
+      'title': 'Break the Tower'
+    }),
+    new HtmlWebpackInlineSourcePlugin(),
   ]
 }

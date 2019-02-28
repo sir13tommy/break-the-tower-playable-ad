@@ -39,6 +39,15 @@ const fitCameraToObject = function ( camera, object, offset, controls ) {
  }
 }
 
+function action () {
+  if (typeof FbPlayableAd !== 'undefined' && FbPlayableAd.onCTAClick) {
+    FbPlayableAd.onCTAClick()
+  } else {
+    console.log('CTA click')
+  }
+}
+
 export default {
-  fitCameraToObject
+  fitCameraToObject,
+  action
 }

@@ -3,12 +3,14 @@ import * as CANNON from 'cannon'
 import * as TWEEN from '@tweenjs/tween.js'
 
 import SeedScene from './objects/Scene.js';
+import './style.css'
 
 let scene
 let camera
 let renderer
 let seedScene
 let world
+let ui
 
 const timeStep=1/60
 
@@ -42,7 +44,10 @@ function initCannon() {
 function initThree () {
   scene = new Scene();
   camera = new PerspectiveCamera();
-  renderer = new WebGLRenderer({antialias: true});
+  renderer = new WebGLRenderer({
+    antialias: true,
+    alpha: true
+  });
   seedScene = new SeedScene(camera, world);
 
   // scene
@@ -54,7 +59,6 @@ function initThree () {
 
   // renderer
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setClearColor(0x7ec0ee, 1);
 
   // dom
   document.body.style.margin = 0;

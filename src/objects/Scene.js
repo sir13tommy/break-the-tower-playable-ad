@@ -7,7 +7,9 @@ import BlockPart from './BlockPart/BlockPart.js'
 import DieBlock from './DieBlock/DieBlock.js'
 import MainBall from './MainBall/MainBall'
 import BasicLights from './Lights.js';
+import UI from './UI/ui'
 import utils from '../common/utils';
+import { timingSafeEqual } from 'crypto';
 
 Cache.enabled = true
 
@@ -26,7 +28,9 @@ export default class SeedScene extends Group {
 
     this.loader = new GLTFLoader()
 
-    this.debugRenderer = new CannonDebugRenderer(this, world)
+    this.ui = new UI()
+
+    // this.debugRenderer = new CannonDebugRenderer(this, world)
 
     this.lights = new BasicLights();
     this.add(this.lights);
@@ -44,6 +48,11 @@ export default class SeedScene extends Group {
     this.initTower()
     this.addMainBall()
     this.addInputControls()
+
+    this.ui.show('Swipe to rotate tower', true)
+    this.world.allowSleep = true
+
+    this.mainBall.body.sleep()
 
     utils.fitCameraToObject(this.camera, this.tower)
 
@@ -149,6 +158,20 @@ export default class SeedScene extends Group {
       this.checkRows()
     })
 
+    this.mainBall.body.addEventListener('collide', (event) => {
+      if (event.body.object.isDie) {
+        this.lockUI = true
+        this.ui.show('Level failed. To continue the game download the full version below', false, {
+          ctaCallback: () => {
+            utils.action()
+          },
+          restartCallback: () => {
+            this.restart()
+          }
+        })
+      }
+    })
+
     this.objects.push(this.mainBall)
   }
 
@@ -186,6 +209,25 @@ export default class SeedScene extends Group {
 
   finishGame () {
     this.objectsToRemove.push(this.mainBall)
+    this.ui.show('Download The Game to Continue', false, {
+      ctaCallback: () => {
+        utils.action()
+      },
+      restartCallback: () => {
+        this.restart()
+      }
+    })
+  }
+
+  restart () {
+    let parent = this.parent
+    let world = this.world
+    let camera = this.camera
+
+
+    this.parent.remove(this)
+    let newScene = new SeedScene(camera, world)
+    parent.add(newScene)
   }
 
   addInputControls() {
@@ -196,18 +238,28 @@ export default class SeedScene extends Group {
 
     let onDocumentMouseDown = ( event ) => {
 
-      event.preventDefault();
+      if (this.ui.visible) {
+        setTimeout(() => {
+          if (!this.lockUI) {
+            this.ui.hide()
+            this.mainBall.body.wakeUp()
+          }
+        }, 200)
+      }
 
-      document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-      document.addEventListener( 'mouseup', onDocumentMouseUp, false );
-      document.addEventListener( 'mouseout', onDocumentMouseOut, false );
+      this.addEventsListener( ['mousemove', 'touchmove'], onDocumentMouseMove, false );
+      this.addEventsListener( ['mouseup', 'touchend'], onDocumentMouseUp, false );
+      this.addEventsListener( ['mouseout', 'touchend'], onDocumentMouseOut, false );
 
-      this.inputData.lastMouseX = event.clientX;
+      this.inputData.lastMouseX = event.clientX || event.touches[0].clientX;
     }
 
     let onDocumentMouseMove = ( event ) => {
-        let mouseX = event.clientX;
+        let mouseX = event.clientX || event.touches[0].clientX;
 
+        if (!this.inputData.lastMouseX) {
+          this.inputData.lastMouseX = mouseX
+        }
         let targetRotationX = ( mouseX - this.inputData.lastMouseX) * 0.00025;
 
         // update tower rotation to use Cannon physics
@@ -217,22 +269,34 @@ export default class SeedScene extends Group {
           child.body.quaternion.setFromEuler(0, targetAngle, 0, 'XYZ')
           child.userData.angleY = targetAngle
         })
-        this.inputData.lastMouseX = event.clientX
+        this.inputData.lastMouseX = mouseX
     }
 
     let onDocumentMouseUp = ( event ) => {
-        document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
-        document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
-        document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
+        this.removeEventsListener( ['mousemove', 'touchmove'], onDocumentMouseMove, false );
+        this.removeEventsListener( ['mouseup', 'touchend'], onDocumentMouseUp, false );
+        this.removeEventsListener( ['mouseout', 'touchend'], onDocumentMouseOut, false );
     }
 
     let onDocumentMouseOut = ( event ) => {
-        document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
-        document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
-        document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
+        this.removeEventsListener( ['mousemove', 'touchmove'], onDocumentMouseMove, false );
+        this.removeEventsListener( ['mouseup', 'touchend'], onDocumentMouseUp, false );
+        this.removeEventsListener( ['mouseout', 'touchend'], onDocumentMouseOut, false );
     }
 
-    window.addEventListener('mousedown', onDocumentMouseDown, false)
+    this.addEventsListener(['mousedown', 'touchstart'], onDocumentMouseDown, false)
+  }
+
+  addEventsListener (events, listener) {
+    events.forEach(event => {
+      window.addEventListener(event, listener, false)
+    })
+  }
+
+  removeEventsListener (events, listener) {
+    events.forEach(event => {
+      window.removeEventListener(event, listener, false)
+    })
   }
 
   update () {

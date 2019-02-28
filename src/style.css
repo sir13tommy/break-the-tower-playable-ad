@@ -1,0 +1,13 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+  background-image: url('./assets/city_back.png'), 
+                    url('./assets/background.jpg');
+  background-size: cover, contain;
+  background-position: center, center;
+                    
+}
