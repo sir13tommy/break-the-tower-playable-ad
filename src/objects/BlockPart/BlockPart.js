@@ -10,20 +10,22 @@ export default class BlockPart extends Group {
     if (type === undefined) {
       type = 0
     }
-    if (type === 0) {
-      
-    }
 
     this.name = 'Block part';
     this.matrixAutoUpdate = true
 
     let bodyKey
+    let hasDie = false
     switch (type) {
       case 0:
         bodyKey = 'block_unbreak'
         break
       case 1:
         bodyKey = 'block_part'
+        break
+      case 2:
+        bodyKey = 'block_part'
+        hasDie = true
         break
       default:
         break
@@ -48,6 +50,10 @@ export default class BlockPart extends Group {
     this.box = new Box3().setFromObject(this)
 
     this.initPhysicsBody()
+
+    if (hasDie) {
+      this.addDiePlank()
+    }
   }
 
   getSize () {
@@ -83,6 +89,48 @@ export default class BlockPart extends Group {
     this.world.addBody(this.body)
   }
 
+  addDiePlank () {
+    let model = Cache.get('die_plank').scene.clone(true)
+
+    this.add(model)
+
+    let plankBox = new Box3().setFromObject(model)
+    this.plankBox = plankBox
+    this.diePlank = model
+    this.diePlank.isDie = true
+    this.diePlank.visible = false
+
+    this.initDiePlankBody()
+    
+    // this.diePlank.rotation.y = this.diePlank.rotation.y - 0.3
+    let rotationY = this.diePlank.rotation.y
+    this.tween = new TWEEN.Tween(this.diePlank.rotation)
+      .to({y: rotationY + 0.6}, 2000)
+      .easing(TWEEN.Easing.Linear.None)
+      .yoyo(true)
+      .repeat(Infinity)
+      .onUpdate(() => {
+        
+      })
+      // .start()
+  }
+
+  initDiePlankBody() {
+    let size = this.plankBox.getSize()
+    let boxCenter = this.plankBox.getCenter()
+    let shape = new Box(new Vec3(size.x / 2, size.y / 2, size.z / 2))
+    this.diePlank.body = new Body({
+      mass: 0,
+      type: Body.STATIC
+    })
+    let shapeOffset = new Vec3().copy(boxCenter)
+    this.diePlank.body.addShape(shape, shapeOffset)
+    this.diePlank.body.name = 'Plank Die'
+    this.diePlank.body.object = this.diePlank
+
+    this.world.addBody(this.diePlank.body)
+  }
+
   kill () {
     this.userData.alive = false
     this.destroy()
@@ -98,16 +146,30 @@ export default class BlockPart extends Group {
       this.bodiesToRemove.push(this.body)
       this.hasBody = false
     }
+    if (this.diePlank && this.diePlank.body) {
+      this.bodiesToRemove.push(this.diePlank.body)
+    }
   }
 
   removeObject() {
     this.pendingDestroy = true
   }
 
+  showDie () {
+    if (this.diePlank) {
+      this.diePlank.visible = true
+    }
+  }
+
   update () {
     if (this.body) {
       this.position.copy(this.body.position)
       this.quaternion.copy(this.body.quaternion)  
+    }
+
+    if (this.diePlank && this.diePlank.body) {
+      this.diePlank.body.position.copy(this.position)
+      this.diePlank.body.quaternion.copy(this.quaternion)
     }
 
     this.bodiesToRemove.forEach(body => {

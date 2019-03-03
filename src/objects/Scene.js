@@ -22,8 +22,8 @@ import utils from '../common/utils';
 Cache.enabled = true
 
 let towerScheme = [
-  [1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+  [2, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 0, 1, 1, 1, 2, 1, 1],
   [0, 1, 1, 1, 1, 1, 0, 1, 1, 1],
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 ]
@@ -38,7 +38,7 @@ export default class SeedScene extends Group {
 
     this.ui = new UI()
 
-    // this.debugRenderer = new CannonDebugRenderer(this, world)
+    this.debugRenderer = new CannonDebugRenderer(this, world)
 
     this.lights = new BasicLights();
     this.add(this.lights);
@@ -74,7 +74,8 @@ export default class SeedScene extends Group {
       { key: 'block_part', url: require('./BlockPart/BlockPart.model.gltf'), loaded: false},
       { key: 'block_unbreak', url: require('./BlockPart/BlockUnbreakable.model.gltf'), loaded: false},
       { key: 'main_ball', url: require('./MainBall/MainBall.model.gltf'), loaded: false},
-      { key: 'die_block', url: require('./DieBlock/DieBlock.model.gltf'), loaded: false}
+      { key: 'die_block', url: require('./DieBlock/DieBlock.model.gltf'), loaded: false},
+      { key: 'die_plank', url: require('./BlockPart/DiePlank.model.gltf'), loaded: false}
     ]
 
     this.fileList.forEach(file => {
@@ -112,11 +113,12 @@ export default class SeedScene extends Group {
       dieBlock.update()
       this.tower.add(dieBlock)
       this.objects.push(dieBlock)
-      offsetY = this.getTowerSize().y
+      offsetY += dieBlock.getSize().y
 
       row.dieBlock = dieBlock
       row.blockParts = []
 
+      let maxBlockSizeY = 0
       for (let x = 0; x < towerScheme[y].length; x++) {
         let blockType = towerScheme[y][x]
         let blockPart = new BlockPart(this.world, blockType)
@@ -130,11 +132,18 @@ export default class SeedScene extends Group {
         this.tower.add(blockPart)
         this.objects.push(blockPart)
         row.blockParts.push(blockPart)
-      }
-      let rowSizeY = this.getTowerSize().y - offsetY
-      offsetY = this.getTowerSize().y
 
-      row.rowSizeY = rowSizeY
+        let blockSizeY = blockPart.getSize().y
+        if (blockSizeY > maxBlockSizeY) {
+          maxBlockSizeY = blockSizeY
+        }
+
+      }
+
+      let rowSizeY = dieBlock.getSize().y + maxBlockSizeY
+      offsetY += maxBlockSizeY
+
+      row.sizeY = rowSizeY
       this.rows.push(row)
     }
 
@@ -143,6 +152,7 @@ export default class SeedScene extends Group {
       child.body.position.y -= this.getTowerSize().y * 0.8
     })
 
+    this.checkRows()
     this.update()
   }
 
@@ -259,6 +269,10 @@ export default class SeedScene extends Group {
     if (!hasAlive) {
       this.removeTopRow()
     }
+
+    topRow.blockParts.forEach(blockPart => {
+      blockPart.showDie()
+    })
   }
 
   removeTopRow() {
@@ -269,13 +283,15 @@ export default class SeedScene extends Group {
     // move tower up
     this.tower.children.forEach(child => {
       let tween = new TWEEN.Tween(child.body.position)
-        .to({y: child.body.position.y + rowToRemove.rowSizeY}, 1000)
+        .to({y: child.body.position.y + rowToRemove.sizeY}, 1000)
         .start()
     })
 
     if (this.rows.length === 0) {
       this.finishGame()
     }
+
+    this.checkRows()
   }
 
   finishGame () {
