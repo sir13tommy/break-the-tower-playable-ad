@@ -22,10 +22,10 @@ import utils from '../common/utils';
 Cache.enabled = true
 
 let towerScheme = [
-  [2, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
   [1, 1, 1, 0, 1, 1, 1, 2, 1, 1],
-  [0, 1, 1, 1, 1, 1, 0, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+  [0, 1, 3, 1, 1, 1, 0, 2, 1, 1],
+  [3, 1, 1, 2, 1, 1, 3, 1, 1, 1]
 ]
 
 export default class SeedScene extends Group {
@@ -37,14 +37,12 @@ export default class SeedScene extends Group {
     this.loader = new GLTFLoader()
 
     this.ui = new UI()
+    this.allowToRestart = true
 
     this.debugRenderer = new CannonDebugRenderer(this, world)
 
     this.lights = new BasicLights();
     this.add(this.lights);
-
-    this.tower = new Group()
-    this.add(this.tower)
 
     this.objects = []
     this.objectsToRemove = []
@@ -62,12 +60,17 @@ export default class SeedScene extends Group {
 
     this.mainBall.body.sleep()
 
+    this.focusCameraOnTower()
+  }
+
+  focusCameraOnTower () {
     utils.fitCameraToObject(this.camera, this.tower)
 
     this.camera.position.x = 0
     this.camera.position.y = this.getTowerSize().y
     this.camera.lookAt(this.tower.position)
   }
+  
 
   load () {
     this.fileList = [
@@ -75,7 +78,8 @@ export default class SeedScene extends Group {
       { key: 'block_unbreak', url: require('./BlockPart/BlockUnbreakable.model.gltf'), loaded: false},
       { key: 'main_ball', url: require('./MainBall/MainBall.model.gltf'), loaded: false},
       { key: 'die_block', url: require('./DieBlock/DieBlock.model.gltf'), loaded: false},
-      { key: 'die_plank', url: require('./BlockPart/DiePlank.model.gltf'), loaded: false}
+      { key: 'die_plank', url: require('./BlockPart/DiePlank.model.gltf'), loaded: false},
+      { key: 'die_cone', url: require('./BlockPart/DieCone.model.gltf'), loaded: false}
     ]
 
     this.fileList.forEach(file => {
@@ -102,6 +106,9 @@ export default class SeedScene extends Group {
   }
 
   initTower () {
+    this.tower = new Group()
+    this.add(this.tower)
+
     let offsetY = 0
     this.rows = []
     for (let y = towerScheme.length - 1; y >= 0; y--) {
@@ -183,13 +190,20 @@ export default class SeedScene extends Group {
     this.mainBall.body.addEventListener('collide', (event) => {
       if (event.body.object.isDie) {
         this.lockUI = true
+
+        let restartCallback
+        if (this.allowToRestart) {
+          restartCallback = () => {
+            this.restart()
+          }
+          this.allowToRestart = false
+        }
+
         this.ui.show('Want to play more?', false, {
           ctaCallback: () => {
             utils.action()
           },
-          restartCallback: () => {
-            this.restart()
-          }
+          restartCallback:restartCallback
         })
       }
     })
@@ -258,6 +272,9 @@ export default class SeedScene extends Group {
 
   checkRows () {
     let topRow = this.rows[this.rows.length - 1]
+    if (!topRow) {
+      return
+    }
 
     let hasAlive = false
     topRow.blockParts.forEach(blockPart => {
@@ -295,26 +312,42 @@ export default class SeedScene extends Group {
   }
 
   finishGame () {
+    let restartCallback
+    if (this.allowToRestart) {
+      restartCallback = () => {
+        this.restart()
+      }
+      this.allowToRestart = false
+    }
     this.objectsToRemove.push(this.mainBall)
+    this.lockUI = true
     this.ui.show('Want to play more?', false, {
       ctaCallback: () => {
         utils.action()
       },
-      restartCallback: () => {
-        this.restart()
-      }
+      restartCallback: restartCallback
     })
   }
 
   restart () {
-    let parent = this.parent
-    let world = this.world
-    let camera = this.camera
+    this.ui.hide()
 
+    this.remove(this.tower)
+    this.remove(this.mainBall)
+    
+    this.tower.children.forEach(child => {
+      if (child.body && child.body.world) {
+        child.body.world.remove(child.body)
+      }
+      if (child.diePlank && child.diePlank.body && child.diePlank.body.world) {
+        child.diePlank.body.world.remove(child.diePlank.body)
+      }
+    })
 
-    this.parent.remove(this)
-    let newScene = new SeedScene(camera, world)
-    parent.add(newScene)
+    this.initTower()
+    this.addMainBall()
+
+    this.focusCameraOnTower()
   }
 
   addInputControls() {

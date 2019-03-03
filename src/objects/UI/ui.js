@@ -31,6 +31,13 @@ export default class UI {
       let ctaBtn = buttonsBlock.querySelector('.cta')
       let restartBtn = buttonsBlock.querySelector('.restart')
 
+      if (btnConfig.restartCallback) {
+        restartBtn.style.display = 'inline-block'
+        restartBtn.addEventListener('click', btnConfig.restartCallback, false)
+      } else { 
+        restartBtn.style.display = 'none'
+      }
+
       if (btnConfig.ctaCallback) {
         ctaBtn.addEventListener('click', btnConfig.ctaCallback, false)
       }
@@ -42,8 +49,10 @@ export default class UI {
   }
 
   hide () {
-    this.visible = false
-    this.dom.remove()
+    if (this.visible) {
+      this.visible = false
+      this.dom.remove()
+    }
   }
 
 }

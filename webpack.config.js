@@ -33,10 +33,10 @@ module.exports = {
         use: 'babel-loader',
         exclude: path.resolve(__dirname, './node_modules/')
       },{
-        test: /\.(jpe?g|png|gif|svg|tga|babylon|mtl|pcb|pcd|prwm|gltf|obj|mat|mp3|ogg)$/i,
+        test: /\.(jpe?g|png|gif|svg|tga|babylon|mtl|pcb|pcd|prwm|gltf|obj|mat|mp3|ogg|woff|woff2)$/i,
         use: 'base64-inline-loader?name=[name].[ext]',
         exclude: path.resolve(__dirname, './node_modules/')
-      },{
+      }, {
         test: /\.(vert|frag|glsl|shader|txt|html)$/i,
         use: 'raw-loader',
         exclude: path.resolve(__dirname, './node_modules/')

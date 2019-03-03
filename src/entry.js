@@ -3,6 +3,7 @@ import * as CANNON from 'cannon'
 import * as TWEEN from '@tweenjs/tween.js'
 
 import SeedScene from './objects/Scene.js';
+import './fonts.css'
 import './style.css'
 
 let scene

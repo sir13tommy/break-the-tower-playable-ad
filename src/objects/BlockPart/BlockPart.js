@@ -16,6 +16,7 @@ export default class BlockPart extends Group {
 
     let bodyKey
     let hasDie = false
+    let dieType
     switch (type) {
       case 0:
         bodyKey = 'block_unbreak'
@@ -26,7 +27,12 @@ export default class BlockPart extends Group {
       case 2:
         bodyKey = 'block_part'
         hasDie = true
+        dieType = 'die_plank'
         break
+      case 3:
+        bodyKey = 'block_part'
+        hasDie = true
+        dieType = 'die_cone'
       default:
         break
     }
@@ -52,7 +58,7 @@ export default class BlockPart extends Group {
     this.initPhysicsBody()
 
     if (hasDie) {
-      this.addDiePlank()
+      this.addDiePlank(dieType)
     }
   }
 
@@ -89,8 +95,8 @@ export default class BlockPart extends Group {
     this.world.addBody(this.body)
   }
 
-  addDiePlank () {
-    let model = Cache.get('die_plank').scene.clone(true)
+  addDiePlank (dieType) {
+    let model = Cache.get(dieType).scene.clone(true)
 
     this.add(model)
 
