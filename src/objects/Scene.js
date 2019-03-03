@@ -37,9 +37,9 @@ export default class SeedScene extends Group {
     this.loader = new GLTFLoader()
 
     this.ui = new UI()
-    this.allowToRestart = true
+    this.lifes = 2
 
-    this.debugRenderer = new CannonDebugRenderer(this, world)
+    // this.debugRenderer = new CannonDebugRenderer(this, world)
 
     this.lights = new BasicLights();
     this.add(this.lights);
@@ -192,11 +192,11 @@ export default class SeedScene extends Group {
         this.lockUI = true
 
         let restartCallback
-        if (this.allowToRestart) {
+        if (this.lifes) {
           restartCallback = () => {
             this.restart()
           }
-          this.allowToRestart = false
+          this.lifes--
         }
 
         this.ui.show('Want to play more?', false, {
@@ -313,11 +313,11 @@ export default class SeedScene extends Group {
 
   finishGame () {
     let restartCallback
-    if (this.allowToRestart) {
+    if (this.lifes) {
       restartCallback = () => {
         this.restart()
       }
-      this.allowToRestart = false
+      this.lifes--
     }
     this.objectsToRemove.push(this.mainBall)
     this.lockUI = true
