@@ -47,10 +47,20 @@ export default class MainBall extends Group {
       // remove block
       if (event.body.object.isDie) {
         this.objectsToRemove.push(this)
+
+        this.body.dispatchEvent({
+          type: 'die',
+          object: event.body.object
+        })
       }
 
       if (event.body.object.bodyType === 'block_part') {
-        this.objectsToRemove.push(event.body.object)
+        event.body.object.kill()
+
+        this.body.dispatchEvent({
+          type: 'kill',
+          object: event.body.object
+        })
       }
 
       if (event.body.object.bodyType === 'block_unbreak') {
@@ -76,10 +86,6 @@ export default class MainBall extends Group {
       if (object.body.world) {
         object.body.world.remove(object.body)
       }
-
-      this.body.dispatchEvent({
-        type: 'kill'
-      })
     })
     this.objectsToRemove = []
 

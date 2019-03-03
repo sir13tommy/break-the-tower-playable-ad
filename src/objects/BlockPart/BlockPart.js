@@ -1,4 +1,4 @@
-import { Group, Cache, Box3 } from 'three';
+import { Group, Cache, Box3, Vector3 } from 'three';
 import { Box, Body, Vec3 } from 'cannon'
 import * as TWEEN from '@tweenjs/tween.js'
 
@@ -54,6 +54,16 @@ export default class BlockPart extends Group {
     return this.box.getSize()
   }
 
+  getAbsolutePosition () {
+    let center = this.box.getCenter()
+
+    return new Vector3(
+      this.x - center.x,
+      this.y - center.y,
+      this.z - center.z
+    )
+  }
+
   initPhysicsBody () {
     let size = this.getSize()
     let boxCenter = this.box.getCenter()
@@ -66,14 +76,50 @@ export default class BlockPart extends Group {
     this.body.addShape(shape, shapeOffset)
     this.body.name = 'Block part'
     this.body.object = this
+    this.hasBody = true
+
+    this.bodiesToRemove = []
 
     this.world.addBody(this.body)
+  }
+
+  kill () {
+    this.userData.alive = false
+    this.destroy()
+  }
+
+  destroy () {
+    this.removeBody()
+    this.removeObject()
+  }
+
+  removeBody () {
+    if (this.hasBody) {
+      this.bodiesToRemove.push(this.body)
+      this.hasBody = false
+    }
+  }
+
+  removeObject() {
+    this.pendingDestroy = true
   }
 
   update () {
     if (this.body) {
       this.position.copy(this.body.position)
       this.quaternion.copy(this.body.quaternion)  
+    }
+
+    this.bodiesToRemove.forEach(body => {
+      if (body.world) {
+        body.world.remove(body)
+      }
+    })
+
+    if (this.pendingDestroy) {
+      if (this.parent) {
+        this.parent.remove(this)
+      }
     }
   }
 
@@ -83,7 +129,6 @@ export default class BlockPart extends Group {
         .to({ x: [this.scale.x + 0.2, this.scale.x], y: [this.scale.y - 0.2, this.scale.y]}, 1000)
         .easing(TWEEN.Easing.Elastic.Out)
         .start();
-
     }
   }
 }

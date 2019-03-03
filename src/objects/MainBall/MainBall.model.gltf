@@ -60,7 +60,7 @@
         0,
         1
       ],
-      "name": "MainBall.model.gltf",
+      "name": "MainBallmodelgltf",
       "children": [
         1
       ]
@@ -149,7 +149,11 @@
         "metallicFactor": 0.5,
         "roughnessFactor": 0.5
       },
-      "name": "lambert2"
+      "emissiveFactor": [
+        1,
+        1,
+        1
+      ]
     }
   ],
   "meshes": [

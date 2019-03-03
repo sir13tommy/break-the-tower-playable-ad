@@ -23,7 +23,7 @@
   color: #ffffff;
   text-align: center;
 
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .buttons {
@@ -43,6 +43,15 @@
 }
 .buttons button:not(:last-child) {
   margin-right: 10px;
+}
+
+.buttons .cta {
+  transform-origin: center;
+  animation-name: pulse;
+  animation-duration: 1s;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  animation-timing-function: linear;
 }
 
 .cursor {
@@ -68,5 +77,14 @@
   }
   100% {
     transform: translateX(50px)
+  }
+}
+
+@keyframes pulse {
+  0% { 
+    transform: scale(1.2, 1.2)
+  }
+  100% {
+    transform: scale(0.9, 0.9)
   }
 }

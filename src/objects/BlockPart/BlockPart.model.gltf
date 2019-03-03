@@ -42,7 +42,7 @@
       ]
     },
     {
-      "name": "BlockPart.model.gltf",
+      "name": "BlockPartmodelgltf",
       "children": [
         1
       ]
@@ -130,8 +130,8 @@
       "pbrMetallicRoughness": {
         "baseColorFactor": [
           1,
-          0,
-          0,
+          0.2784313725490196,
+          0.26666666666666666,
           1
         ],
         "metallicFactor": 0.5,

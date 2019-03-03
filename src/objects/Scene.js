@@ -1,7 +1,16 @@
 import 'three/examples/js/loaders/GLTFLoader'
 import 'cannon/tools/threejs/CannonDebugRenderer'
 
-import { Group, GLTFLoader, Cache, Box3, CannonDebugRenderer } from 'three';
+import { 
+  Group,
+  GLTFLoader,
+  Cache,
+  Box3,
+  CannonDebugRenderer,
+  Points,
+  ParticleBasicMaterial,
+
+} from 'three';
 import * as TWEEN from '@tweenjs/tween.js'
 import BlockPart from './BlockPart/BlockPart.js'
 import DieBlock from './DieBlock/DieBlock.js'
@@ -9,7 +18,6 @@ import MainBall from './MainBall/MainBall'
 import BasicLights from './Lights.js';
 import UI from './UI/ui'
 import utils from '../common/utils';
-import { timingSafeEqual } from 'crypto';
 
 Cache.enabled = true
 
@@ -135,8 +143,6 @@ export default class SeedScene extends Group {
       child.body.position.y -= this.getTowerSize().y * 0.8
     })
 
-    
-
     this.update()
   }
 
@@ -154,14 +160,20 @@ export default class SeedScene extends Group {
     this.mainBall.body.position.y = this.tower.position.y + towerSize.y + offsetBallTower
     this.mainBall.body.position.z = this.tower.position.z + towerSize.z / 2 - this.mainBall.getSize().z / 2
 
-    this.mainBall.body.addEventListener('kill', () => {
+    this.mainBall.body.addEventListener('kill', (event) => {
       this.checkRows()
+      this.explode(this.mainBall.position)
+    })
+
+    this.mainBall.body.addEventListener('die', (event) => {
+      this.explode(this.mainBall.position, 0xffffff)
+      this.shakeTower()
     })
 
     this.mainBall.body.addEventListener('collide', (event) => {
       if (event.body.object.isDie) {
         this.lockUI = true
-        this.ui.show('Level failed. To continue the game download the full version below', false, {
+        this.ui.show('Want to play more?', false, {
           ctaCallback: () => {
             utils.action()
           },
@@ -173,6 +185,65 @@ export default class SeedScene extends Group {
     })
 
     this.objects.push(this.mainBall)
+  }
+
+  explode (position, color) {
+    let maxPoints = 25
+    color = color || 0xd22f36
+    let geometry = new THREE.Geometry()
+    let points
+
+    for (let i = 0; i < maxPoints; i++) {
+      let vertex = new THREE.Vector3().copy(position)
+      let maxExplodeDistance = 60
+      let movePosition = new THREE.Vector3(
+        -maxExplodeDistance / 2 + Math.random() * maxExplodeDistance,
+        -60 * Math.random(),
+        -maxExplodeDistance / 2 + Math.random() * maxExplodeDistance
+      )
+
+      let explosionTime = 900
+
+      let tween = new TWEEN.Tween(vertex)
+        .to({
+          x: vertex.x + movePosition.x,
+          z: vertex.z + movePosition.z
+        }, explosionTime)
+        .easing(TWEEN.Easing.Linear.None)
+        .start()
+        .onUpdate(() => {
+          geometry.verticesNeedUpdate = true;
+        })
+
+      let tweenY = new TWEEN.Tween(vertex)
+        .to({
+          y: vertex.y + movePosition.y
+        }, explosionTime)
+        .easing(TWEEN.Easing.Back.In)
+        .start()
+
+      setTimeout(() => {
+        this.remove(points)
+      }, explosionTime)
+
+      geometry.vertices.push(vertex)
+    }
+
+    let material = new THREE.PointsMaterial({
+      size: 2,
+      color
+    })
+
+    points = new THREE.Points(geometry, material)
+
+    this.add(points)
+  }
+
+  shakeTower() {
+    let tween = new TWEEN.Tween(this.tower.position)
+      .to({y: [this.tower.position.y - 1, this.tower.position.y + 1, this.tower.position.y]}, 400)
+      .easing(TWEEN.Easing.Bounce.InOut)
+      .start()
   }
 
   checkRows () {
@@ -209,7 +280,7 @@ export default class SeedScene extends Group {
 
   finishGame () {
     this.objectsToRemove.push(this.mainBall)
-    this.ui.show('Download The Game to Continue', false, {
+    this.ui.show('Want to play more?', false, {
       ctaCallback: () => {
         utils.action()
       },
@@ -233,7 +304,7 @@ export default class SeedScene extends Group {
   addInputControls() {
     this.inputData = {
       lastMouseX: 0,
-      speedRotationFactor: 20
+      speedRotationFactor: 40
     }
 
     let onDocumentMouseDown = ( event ) => {
@@ -251,25 +322,36 @@ export default class SeedScene extends Group {
       this.addEventsListener( ['mouseup', 'touchend'], onDocumentMouseUp, false );
       this.addEventsListener( ['mouseout', 'touchend'], onDocumentMouseOut, false );
 
-      this.inputData.lastMouseX = event.clientX || event.touches[0].clientX;
+      let mouseX
+      if (event.clientX !== undefined) {
+        mouseX = event.clientX
+      } else {
+        mouseX = event.touches[0] && event.touches[0].clientX;
+      }
+      this.inputData.lastMouseX = mouseX
     }
 
     let onDocumentMouseMove = ( event ) => {
-        let mouseX = event.clientX || event.touches[0].clientX;
+      let mouseX
+      if (event.clientX !== undefined) {
+        mouseX = event.clientX
+      } else {
+        mouseX = event.touches[0] && event.touches[0].clientX;
+      }
 
-        if (!this.inputData.lastMouseX) {
-          this.inputData.lastMouseX = mouseX
-        }
-        let targetRotationX = ( mouseX - this.inputData.lastMouseX) * 0.00025;
-
-        // update tower rotation to use Cannon physics
-        let angleStep = targetRotationX * this.inputData.speedRotationFactor
-        this.tower.children.forEach(child => {
-          let targetAngle = child.userData.angleY + angleStep
-          child.body.quaternion.setFromEuler(0, targetAngle, 0, 'XYZ')
-          child.userData.angleY = targetAngle
-        })
+      if (!this.inputData.lastMouseX) {
         this.inputData.lastMouseX = mouseX
+      }
+      let targetRotationX = ( mouseX - this.inputData.lastMouseX) * 0.00025;
+
+      // update tower rotation to use Cannon physics
+      let angleStep = targetRotationX * this.inputData.speedRotationFactor
+      this.tower.children.forEach(child => {
+        let targetAngle = child.userData.angleY + angleStep
+        child.body.quaternion.setFromEuler(0, targetAngle, 0, 'XYZ')
+        child.userData.angleY = targetAngle
+      })
+      this.inputData.lastMouseX = mouseX
     }
 
     let onDocumentMouseUp = ( event ) => {
