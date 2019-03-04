@@ -8,6 +8,24 @@
   background-color: rgba(0, 0, 0, 0.4)
 }
 
+.ui.splash {
+  background: url('./assets/bg_final.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+.splash .splash-image {
+  position: absolute;
+  top: 90px;
+  bottom: 140px;
+  width: 100%;
+
+  background-image: url('./assets/tower.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 .center-content {
   position: absolute;
   top: 50%;
@@ -15,6 +33,14 @@
   transform: translate(-50%, -50%);
 
   width: 320px;
+}
+
+.title {
+  font-size: 30px;
+  color: #ffffff;
+  text-align: center;
+
+  margin: 20px 0;
 }
 
 .content {
@@ -29,10 +55,17 @@
   text-align: center;
 }
 
+.pull-bottom {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  width: 100%;
+}
+
 .buttons button {
   font-family: 'aller_displayregular';
   border: 0 none;
-  padding: 10px 20px;
+  padding: 10px 40px;
   border-radius: 50px;
   background: #d032ff;
 
@@ -47,7 +80,7 @@
 }
 
 .buttons .restart {
-  font-size: 19px;
+  font-size: 24px;
   background: #397c5a;
 }
 

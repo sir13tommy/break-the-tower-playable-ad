@@ -37,7 +37,7 @@ export default class SeedScene extends Group {
     this.loader = new GLTFLoader()
 
     this.ui = new UI()
-    this.lifes = 2
+    this.canRestart = true
 
     // this.debugRenderer = new CannonDebugRenderer(this, world)
 
@@ -55,6 +55,7 @@ export default class SeedScene extends Group {
     this.addMainBall()
     this.addInputControls()
 
+    this.gameStarted = false
     this.ui.show('Swipe to rotate tower', true)
     this.world.allowSleep = true
 
@@ -191,18 +192,11 @@ export default class SeedScene extends Group {
       if (event.body.object.isDie) {
         this.lockUI = true
 
-        let restartCallback
-        if (this.lifes) {
-          restartCallback = () => {
-            this.restart()
-          }
-          this.lifes--
+        let restartCallback = () => {
+          this.restart()
         }
 
-        this.ui.show('Want to play more?', false, {
-          ctaCallback: () => {
-            utils.action()
-          },
+        this.ui.show(' ', false, {
           restartCallback:restartCallback
         })
       }
@@ -312,21 +306,18 @@ export default class SeedScene extends Group {
   }
 
   finishGame () {
-    let restartCallback
-    if (this.lifes) {
-      restartCallback = () => {
-        this.restart()
-      }
-      this.lifes--
+    if (this.mainBall) {
+      this.mainBall.die()
     }
-    this.objectsToRemove.push(this.mainBall)
+
+    this.ui.hide()
+
     this.lockUI = true
     this.ui.show('Want to play more?', false, {
       ctaCallback: () => {
         utils.action()
-      },
-      restartCallback: restartCallback
-    })
+      }
+    }, true, 'Break the Tower')
   }
 
   restart () {
@@ -357,7 +348,6 @@ export default class SeedScene extends Group {
     }
 
     let onDocumentMouseDown = ( event ) => {
-
       if (this.ui.visible) {
         setTimeout(() => {
           if (!this.lockUI) {
@@ -365,6 +355,14 @@ export default class SeedScene extends Group {
             this.mainBall.body.wakeUp()
           }
         }, 200)
+      }
+
+      if (!this.gameStarted) {
+        this.gameStarted = true
+
+        setTimeout(() => {
+          this.finishGame()
+        }, 20 * 1000)
       }
 
       this.addEventsListener( ['mousemove', 'touchmove'], onDocumentMouseMove, false );

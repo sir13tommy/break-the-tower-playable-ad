@@ -45,11 +45,13 @@ export default class BlockPart extends Group {
     
 
     // add edges geometry
-    var geo = new THREE.EdgesGeometry( this._bodyMesh.geometry, 45);
-    var mat = new THREE.LineBasicMaterial( { color: 0x000000, linewidth: 1 } );
-    var wireframe = new THREE.LineSegments( geo, mat );
-    wireframe.renderOrder = 1; // make sure wireframes are rendered 2nd
-    this._bodyMesh.add( wireframe );
+    if (type !== 0) {
+      var geo = new THREE.EdgesGeometry( this._bodyMesh.geometry, 45);
+      var mat = new THREE.LineBasicMaterial( { color: 0x882c32, linewidth: 1 } );
+      var wireframe = new THREE.LineSegments( geo, mat );
+      wireframe.renderOrder = 1; // make sure wireframes are rendered 2nd
+      this._bodyMesh.add( wireframe );
+    }
 
     this.add(model)
 

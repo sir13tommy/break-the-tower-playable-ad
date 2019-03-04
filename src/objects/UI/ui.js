@@ -1,13 +1,21 @@
 import './ui.style.css'
-import template from './ui.template.html'
+import blankTemplate from './ui.template.html'
+import splashTemplate from './splash.template.html'
 
 export default class UI {
   constructor() {
     
   }
 
-  show(text, showCursor, btnConfig) {
+  show(text, showCursor, btnConfig, finalSplash, title) {
     let body = document.body
+    let template
+
+    if (finalSplash) {
+      template = splashTemplate
+    } else {
+      template = blankTemplate
+    }
 
     let dom = document.createElement('div')
     dom.innerHTML = template
@@ -15,13 +23,18 @@ export default class UI {
     this.dom = dom.firstChild
 
     this.dom.querySelector('.content').innerText = text || ''
+    if (finalSplash) {
+      this.dom.querySelector('.title').innerText = title || ''
+    }
 
 
     let cursor = dom.querySelector('.cursor')
-    if (showCursor) {
-      cursor.style.display = 'block'
-    } else {
-      cursor.style.display = 'none'
+    if (cursor) {
+      if (showCursor) {
+        cursor.style.display = 'block'
+      } else {
+        cursor.style.display = 'none'
+      }
     }
 
     let buttonsBlock = dom.querySelector('.buttons')
@@ -31,15 +44,18 @@ export default class UI {
       let ctaBtn = buttonsBlock.querySelector('.cta')
       let restartBtn = buttonsBlock.querySelector('.restart')
 
-      if (btnConfig.restartCallback) {
-        restartBtn.style.display = 'inline-block'
-        restartBtn.addEventListener('click', btnConfig.restartCallback, false)
-      } else { 
-        restartBtn.style.display = 'none'
+      if (restartBtn) {
+        if (btnConfig.restartCallback) {
+          restartBtn.addEventListener('click', btnConfig.restartCallback, false)
+        } else {
+          restartBtn.style.display = 'none'
+        }
       }
 
       if (btnConfig.ctaCallback) {
         ctaBtn.addEventListener('click', btnConfig.ctaCallback, false)
+      } else {
+        ctaBtn.style.display = 'none'
       }
     }
 

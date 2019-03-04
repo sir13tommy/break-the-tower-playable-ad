@@ -11,6 +11,8 @@ export default class MainBall extends Group {
     let model = Cache.get('main_ball').scene.clone(true)
     this.add(model)
 
+    this.userData.alive = true
+
     let scaleFactor = 0.5
     this.scale.set(scaleFactor, scaleFactor, scaleFactor)
 
@@ -46,12 +48,7 @@ export default class MainBall extends Group {
 
       // remove block
       if (event.body.object.isDie) {
-        this.objectsToRemove.push(this)
-
-        this.body.dispatchEvent({
-          type: 'die',
-          object: event.body.object
-        })
+        this.die()
       }
 
       if (event.body.object.bodyType === 'block_part') {
@@ -75,6 +72,20 @@ export default class MainBall extends Group {
 
   kill (object) {
     this.objectsToRemove.push(object)
+  }
+
+  die () {
+    if (!this.userData.alive) {
+      return
+    }
+
+    this.kill(this)
+
+    this.body.dispatchEvent({
+      type: 'die'
+    })
+
+    this.userData.alive = false
   }
 
   update () {
