@@ -26,6 +26,11 @@
   background-repeat: no-repeat;
 }
 
+.splash .title,
+.splash .content {
+  text-transform: uppercase;
+}
+
 .center-content {
   position: absolute;
   top: 50%;
@@ -40,7 +45,7 @@
   color: #ffffff;
   text-align: center;
 
-  margin: 20px 0;
+  margin: 25px 0;
 }
 
 .content {
